@@ -14,7 +14,7 @@ namespace ExcelSerialPortListener {
         public string Response { get; set; } = string.Empty;
 
     //=== Constructor(s) ===
-        public CommChannel(string portName = "COM1", string baudRate = "9600", 
+        public CommChannel(string portName = "COM3", string baudRate = "19200", 
                            string dataBits = "8", string stopBits = "One", string parity = "None") {
             PortName = portName;
             BaudRate = baudRate;
