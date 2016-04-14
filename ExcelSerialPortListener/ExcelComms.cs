@@ -92,7 +92,7 @@ namespace ExcelSerialPortListener {
                 WkBook.Worksheets[WkSheetName].Range[RngName].Value = valueToWrite;
                 return true;
             }
-            catch (Exception e) {
+            catch (Exception) {
                 //Console.WriteLine($"Failed to write value to Excel spreadsheet {WkBook?.Name}.{WkSheetName}.{RngName}, {e.Message}");
                 return false;
             }
