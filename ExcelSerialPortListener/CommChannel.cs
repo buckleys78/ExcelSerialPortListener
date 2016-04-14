@@ -11,7 +11,7 @@ namespace ExcelSerialPortListener {
         public string StopBits { get; set; }
         public SerialPort CommPort = new SerialPort();
         public bool IsOpen => CommPort.IsOpen;
-        public string Response { get; set; } = string.Empty;
+        //public string Response { get; set; } = string.Empty;
 
     //=== Constructor(s) ===
         public CommChannel(string portName = "COM3", string baudRate = "19200", 
@@ -52,45 +52,47 @@ namespace ExcelSerialPortListener {
             }
         }
 
-        public string ReadData(double timeOutInSeconds = 30) {
-            DateTime timeOut = DateTime.Now.AddSeconds(timeOutInSeconds);
-            bool isTimedOut = false;
-            do {
-                if (Response.Length > 0)
-                    break;
-                Thread.Sleep(200);
-                isTimedOut = DateTime.Now > timeOut;
-            } while (!isTimedOut);
+        //public string ReadData(double timeOutInSeconds = 30) {
+        //    DateTime timeOut = DateTime.Now.AddSeconds(timeOutInSeconds);
+        //    bool isTimedOut = false;
+        //    do {
+        //        if (Response.Length > 0)
+        //            break;
+        //        Thread.Sleep(200);
+        //        isTimedOut = DateTime.Now > timeOut;
+        //    } while (!isTimedOut);
 
-            if (isTimedOut) {
-                return "Timed Out";
-            } else {
-                return OnlyDigits(Response);
-            }
-        }
+        //    if (isTimedOut) {
+        //        return "Timed Out";
+        //    } else {
+        //        return OnlyDigits(Response);
+        //    }
+        //}
 
         public void WriteData(string dataString) {
+            Console.WriteLine($"got Print command.");
             if (!IsOpen)
                 CommPort.Open();
             CommPort.Write(dataString);
         }
 
-        private string OnlyDigits(string s) {
-            string onlyDigits = s.Trim();
-            int indexOfSpaceG = onlyDigits.IndexOf(" g");
-            if (indexOfSpaceG > 0)
-                onlyDigits = onlyDigits.Substring(0, indexOfSpaceG);
-            double tester;
-            if (double.TryParse(onlyDigits, out tester)) {
-                return onlyDigits;
-            } else {
-                return string.Empty;
-            }
-        }
+        //private string OnlyDigits(string s) {
+        //    string onlyDigits = s.Trim();
+        //    int indexOfSpaceG = onlyDigits.IndexOf(" g");
+        //    if (indexOfSpaceG > 0)
+        //        onlyDigits = onlyDigits.Substring(0, indexOfSpaceG);
+        //    double tester;
+        //    if (double.TryParse(onlyDigits, out tester)) {
+        //        return onlyDigits;
+        //    } else {
+        //        return string.Empty;
+        //    }
+        //}
 
         private void SerialDeviceDataReceivedHandler(object sender, SerialDataReceivedEventArgs e) {
             SerialPort sp = (SerialPort)sender;
-            Response = sp.ReadExisting();
+            Program.Response = sp.ReadExisting();
+            Console.WriteLine($"Received Response: {Program.Response}");
         }
     }
 }

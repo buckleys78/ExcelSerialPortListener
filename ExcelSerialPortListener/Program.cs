@@ -1,38 +1,73 @@
 ﻿using System;
-//using ExcelSerialPortListener = Microsoft.Office.Interop.Excel;
-//using System.IO.Ports;
-//using System.Collections.Generic;
-//using System.Linq;
-//using System.Text;
-//using System.Threading.Tasks;
+using System.Threading;
 
 namespace ExcelSerialPortListener {
     class Program {
-        static string response { get; set; }
+        public static string Response { get; set; } = string.Empty;
+        static bool _gotResponse;
+        private static CommChannel ScaleComms { get; set; }
+        private static bool CommsAreOpen { get; set; }
 
         static void Main(string[] args) {
             Params parameters = new Params(args);
             // args: WkbookName, WkSheetName, Range, CommPort, BaudRate
-            //for (var i=0; i < args.Length; i++) {
-                //Console.WriteLine($"    Here is parameter{i}: {args[i]}");
-            //}
-            var scaleComms = new CommChannel(parameters.CommPort, parameters.Baudrate);
-            bool commsAreOpen = scaleComms.OpenPort();
-            //bool commsAreOpen = true;
 
-            //Console.WriteLine($"Comms are open = {scaleComms.IsOpen}");
+            ScaleComms = new CommChannel(parameters.CommPort, parameters.Baudrate);
 
-            if (commsAreOpen) {
-                response = scaleComms.ReadData();
-                //response = "new";
-                //Console.WriteLine($"Scale response: {response}");
+            CommsAreOpen = ScaleComms.OpenPort();
+            if (CommsAreOpen) {
+                var mainThread = new Thread(() => ListenToScale());
+                var consoleKeyListener = new Thread(ListenerKeyBoardEvent);
+                
+                consoleKeyListener.Start();
+                mainThread.Start();
+
+                while (true) {
+                    if (_gotResponse) {
+                        mainThread?.Abort();
+                        consoleKeyListener?.Abort();
+                        break;
+                    } 
+                }
+
                 ExcelComms excel = new ExcelComms(parameters.WorkbookName, parameters.WorksheetName, parameters.RangeName);
-                excel.WriteValueToWks(response);
+                excel.WriteValueToWks(Response);
             }
 
-            scaleComms.ClosePort();
-            //Console.WriteLine($"and now Comms are open = {scaleComms.IsOpen}");
-            //Console.ReadKey();
+            ScaleComms.ClosePort();
+        }
+
+        public static void ListenerKeyBoardEvent() {
+            do {
+                if (Console.ReadKey(true).Key == ConsoleKey.Spacebar) {
+                    Console.WriteLine("Saw pressed key!");
+                    const string printCmd = "P\r";
+                    ScaleComms.WriteData(printCmd);
+                }
+            } while (true);
+        }
+
+        public static void ListenToScale(double timeOutInSeconds = 30) {
+            var timeOut = DateTime.Now.AddSeconds(timeOutInSeconds);
+            var isTimedOut = false;
+            do {
+                if (Response.Length > 0)
+                    break;
+                Thread.Sleep(200);
+                isTimedOut = DateTime.Now > timeOut;
+            } while (!isTimedOut);
+
+            Response = isTimedOut ? "Timed Out" : OnlyDigits(Response);
+            _gotResponse = true;
+        }
+
+        private static string OnlyDigits(string s) {
+            var onlyDigits = s.Trim();
+            var indexOfSpaceG = onlyDigits.IndexOf(" g");
+            if (indexOfSpaceG > 0)
+                onlyDigits = onlyDigits.Substring(0, indexOfSpaceG);
+            double tester;
+            return double.TryParse(onlyDigits, out tester) ? onlyDigits : string.Empty;
         }
     }
 }
